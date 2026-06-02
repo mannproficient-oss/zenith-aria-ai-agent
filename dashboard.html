@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aria Admin Dashboard — Zenith School of AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #7c6dff;
+    --accent2: #ff6d8a;
+    --green: #00e5a0;
+    --amber: #ffb347;
+    --text: #e8e8f0;
+    --text2: #888899;
+    --text3: #555566;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+    z-index: 100;
+  }
+
+  .logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); }
+  .logo-name { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
+  .logo-sub { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+  .nav { padding: 16px 0; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent; }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(124,109,255,0.08); }
+
+  .sidebar-bottom { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .agent-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .main { margin-left: 220px; padding: 32px; min-height: 100vh; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .page-title { font-size: 22px; font-weight: 600; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.purple::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.amber::before { background: var(--amber); }
+  .stat-card.pink::before { background: var(--accent2); }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Space Mono', monospace; font-size: 28px; font-weight: 700; }
+  .stat-change { font-size: 11px; color: var(--green); margin-top: 4px; }
+
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+  .section-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .section-title { font-size: 14px; font-weight: 600; }
+  .badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: rgba(124,109,255,0.15); color: var(--accent); font-family: 'Space Mono', monospace; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 20px; text-align: left; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; background: rgba(255,255,255,0.02); font-weight: 500; }
+  td { padding: 14px 20px; font-size: 13px; border-top: 1px solid var(--border); color: var(--text2); }
+  tr:hover td { background: rgba(255,255,255,0.02); cursor: pointer; }
+
+  .call-number { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text); }
+  .status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 8px; border-radius: 20px; }
+  .status-badge.success { background: rgba(0,229,160,0.1); color: var(--green); }
+  .status-badge.failed { background: rgba(255,109,138,0.1); color: var(--accent2); }
+
+  .action-btn { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 5px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 600px; max-width: 90vw; max-height: 80vh; overflow-y: auto; }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-close { background: transparent; border: none; color: var(--text2); font-size: 20px; cursor: pointer; }
+  .modal-body { padding: 24px; }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .meta-item { background: var(--surface2); border-radius: 8px; padding: 12px; }
+  .meta-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .meta-value { font-size: 13px; color: var(--text); font-family: 'Space Mono', monospace; }
+
+  .transcript-box { background: var(--surface2); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .transcript-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .message { margin-bottom: 10px; display: flex; gap: 10px; }
+  .message-role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; min-width: 50px; padding-top: 2px; }
+  .message-role.aria { color: var(--accent); }
+  .message-role.user { color: var(--green); }
+  .message-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  .recording-url { background: var(--surface2); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .url-text { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); word-break: break-all; }
+  .copy-btn { background: var(--accent); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+
+  .outbound-form { display: flex; flex-direction: column; gap: 16px; }
+  .form-group label { display: block; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .form-group input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; }
+  .form-group input:focus { border-color: var(--accent); }
+  .call-btn { background: var(--accent); border: none; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+  .filter-row { display: flex; gap: 8px; align-items: center; }
+  .filter-btn { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .filter-btn.active, .filter-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,109,255,0.08); }
+  .search-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; color: var(--text); font-size: 12px; font-family: 'DM Sans', sans-serif; outline: none; width: 180px; }
+  .search-input:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-name">ARIA</div>
+    <div class="logo-sub">Admin Dashboard</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="showPage('dashboard', this)">▦ Dashboard</div>
+    <div class="nav-item" onclick="showPage('calls', this)">↗ All Calls</div>
+    <div class="nav-item" onclick="showPage('transcripts', this)">≡ Transcripts</div>
+    <div class="nav-item" onclick="showPage('outbound', this)">⊕ New Call</div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="agent-status">
+      <div class="status-dot"></div>
+      Aria is Live
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Zenith School of AI — Aria Agent Overview</div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card purple"><div class="stat-label">Total Calls</div><div class="stat-value">24</div><div class="stat-change">+8 this week</div></div>
+      <div class="stat-card green"><div class="stat-label">Successful</div><div class="stat-value">21</div><div class="stat-change">87.5% success rate</div></div>
+      <div class="stat-card amber"><div class="stat-label">Avg Duration</div><div class="stat-value">1:42</div><div class="stat-change">min per call</div></div>
+      <div class="stat-card pink"><div class="stat-label">Credits Used</div><div class="stat-value">9418</div><div class="stat-change">582 remaining</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><div class="section-title">Recent Calls</div><span class="badge">Last 5</span></div>
+      <table><thead><tr><th>Number</th><th>Date & Time</th><th>Duration</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="recent-calls"></tbody></table>
+    </div>
+  </div>
+
+  <div class="page" id="page-calls">
+    <div class="page-header">
+      <div><div class="page-title">All Calls</div><div class="page-sub">Complete call history</div></div>
+      <div class="filter-row">
+        <input class="search-input" placeholder="Search number..." />
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">Success</button>
+        <button class="filter-btn">Failed</button>
+      </div>
+    </div>
+    <div class="section">
+      <table><thead><tr><th>Caller Number</th><th>Date & Time</th><th>Duration</th><th>Language</th><th>Status</th><th>Transcript</th><th>Recording URL</th></tr></thead>
+      <tbody id="all-calls"></tbody></table>
+    </div>
+  </div>
+
+  <div class="page" id="page-transcripts">
+    <div class="page-header"><div><div class="page-title">Transcripts</div><div class="page-sub">Full conversation history</div></div></div>
+    <div id="transcript-list"></div>
+  </div>
+
+  <div class="page" id="page-outbound">
+    <div class="page-header"><div><div class="page-title">New Outbound Call</div><div class="page-sub">Place a call from Aria</div></div></div>
+    <div class="section" style="max-width:480px">
+      <div class="section-header"><div class="section-title">Call Details</div></div>
+      <div style="padding:24px">
+        <div class="outbound-form">
+          <div class="form-group"><label>Phone Number</label><input type="text" placeholder="+91 98765 43210" id="call-number" /></div>
+          <div class="form-group"><label>Agent</label><input type="text" value="Aria — Zenith Admission Counsellor" readonly /></div>
+          <div class="form-group"><label>Twilio Number</label><input type="text" value="+1 401 398 5468" readonly /></div>
+          <button class="call-btn" onclick="placeCall()">Place Call via ElevenLabs</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Call Details</div>
+      <button class="modal-close" onclick="closeModalDirect()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const calls = [
+  { id: 'conv_5401kt350aztexgt7zj771fgcmg4', number: '+919015955040', date: 'Jun 2, 2026', time: '8:41 AM', duration: '1:19', language: 'English', status: 'success', credits: 893, transcript: [{ role: 'aria', text: "Hi! I'm Aria, your admission counsellor from Zenith School of AI. Am I speaking with someone interested in our B.Tech AI program?" },{ role: 'user', text: "Yes, I wanted to know about the fees and scholarships available." },{ role: 'aria', text: "The annual tuition fee is Rs 4.75 Lakh per year. We offer merit scholarships up to 100% tuition waiver! Shall I walk you through the options?" }], recordingUrl: 'https://elevenlabs.io/app/conversational-ai/conversations/conv_5401kt350aztexgt7zj771fgcmg4' },
+  { id: 'conv_4821kt240bztexgt6yi661egcmf3', number: '+918968607259', date: 'Jun 2, 2026', time: '9:15 AM', duration: '2:34', language: 'Hindi', status: 'success', credits: 1650, transcript: [{ role: 'aria', text: "Hi! I'm Aria from Zenith School of AI. Are you interested in our B.Tech AI program?" },{ role: 'user', text: "Haan, mujhe course ke baare mein jaanna tha." },{ role: 'aria', text: "Bilkul! Zenith ka B.Tech AI program 4 saal ka residential program hai. Aap student hain ya parent?" }], recordingUrl: 'https://elevenlabs.io/app/conversational-ai/conversations/conv_4821kt240bztexgt6yi661egcmf3' },
+  { id: 'conv_3711kt130aztexgt5xh551dgcme2', number: '+917701234567', date: 'Jun 1, 2026', time: '4:22 PM', duration: '0:45', language: 'English', status: 'failed', credits: 480, transcript: [{ role: 'aria', text: "Hi! I'm Aria from Zenith School of AI." },{ role: 'user', text: "Sorry wrong number." }], recordingUrl: 'https://elevenlabs.io/app/conversational-ai/conversations/conv_3711kt130aztexgt5xh551dgcme2' },
+  { id: 'conv_2601kt020aztexgt4wg441cgcmd1', number: '+919876543210', date: 'Jun 1, 2026', time: '11:05 AM', duration: '3:12', language: 'Hinglish', status: 'success', credits: 2100, transcript: [{ role: 'aria', text: "Hi! I'm Aria from Zenith School of AI." },{ role: 'user', text: "Kitna package milta hai?" },{ role: 'aria', text: "Average package 16 LPA+ hai, highest 2.7 Crore. 1000+ students MAANG companies mein placed hain!" }], recordingUrl: 'https://elevenlabs.io/app/conversational-ai/conversations/conv_2601kt020aztexgt4wg441cgcmd1' },
+  { id: 'conv_1501kt910aztexgt3vf331bgcmc0', number: '+919012345678', date: 'May 31, 2026', time: '2:30 PM', duration: '1:55', language: 'English', status: 'success', credits: 1240, transcript: [{ role: 'aria', text: "Hi! I'm Aria from Zenith School of AI." },{ role: 'user', text: "My daughter has no coding background, will she manage?" },{ role: 'aria', text: "Absolutely! 60% of our students join with zero coding experience. We start from Day 1 basics — we look for curiosity, not coding skills!" }], recordingUrl: 'https://elevenlabs.io/app/conversational-ai/conversations/conv_1501kt910aztexgt3vf331bgcmc0' }
+];
+
+function renderCalls(list, tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  tbody.innerHTML = list.map(c => `
+    <tr onclick="openModal('${c.id}')">
+      <td><span class="call-number">${c.number}</span></td>
+      <td>${c.date}, ${c.time}</td>
+      <td>${c.duration} min</td>
+      ${tbodyId === 'all-calls' ? `<td>${c.language}</td>` : ''}
+      <td><span class="status-badge ${c.status}">${c.status === 'success' ? '● Success' : '● Failed'}</span></td>
+      ${tbodyId === 'all-calls' ? `
+        <td><button class="action-btn" onclick="event.stopPropagation();openModal('${c.id}')">View</button></td>
+        <td><button class="action-btn" onclick="event.stopPropagation();copyUrl('${c.recordingUrl}')">Copy URL</button></td>
+      ` : `<td><button class="action-btn" onclick="event.stopPropagation();openModal('${c.id}')">View</button></td>`}
+    </tr>
+  `).join('');
+}
+
+function renderTranscripts() {
+  const el = document.getElementById('transcript-list');
+  el.innerHTML = calls.map(c => `
+    <div class="section" style="margin-bottom:16px">
+      <div class="section-header">
+        <div><div class="section-title" style="font-family:'Space Mono',monospace;font-size:13px">${c.number}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${c.date} ${c.time} · ${c.duration} min · ${c.language}</div></div>
+        <span class="status-badge ${c.status}">${c.status === 'success' ? '● Success' : '● Failed'}</span>
+      </div>
+      <div style="padding:16px 20px">
+        ${c.transcript.map(m => `<div class="message"><div class="message-role ${m.role}">${m.role === 'aria' ? 'ARIA' : 'USER'}</div><div class="message-text">${m.text}</div></div>`).join('')}
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div class="recording-url"><div class="url-text">${c.recordingUrl}</div><button class="copy-btn" onclick="copyUrl('${c.recordingUrl}')">Copy URL</button></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openModal(id) {
+  const c = calls.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modal-title').textContent = 'Call — ' + c.number;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="meta-grid">
+      <div class="meta-item"><div class="meta-label">Date & Time</div><div class="meta-value">${c.date}, ${c.time}</div></div>
+      <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value">${c.duration} min</div></div>
+      <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">${c.status}</div></div>
+      <div class="meta-item"><div class="meta-label">Credits Used</div><div class="meta-value">${c.credits}</div></div>
+    </div>
+    <div class="transcript-box">
+      <div class="transcript-label">Transcript</div>
+      ${c.transcript.map(m => `<div class="message"><div class="message-role ${m.role}">${m.role === 'aria' ? 'ARIA' : 'USER'}</div><div class="message-text">${m.text}</div></div>`).join('')}
+    </div>
+    <div style="margin-bottom:8px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Recording URL</div>
+    <div class="recording-url"><div class="url-text">${c.recordingUrl}</div><button class="copy-btn" onclick="copyUrl('${c.recordingUrl}')">Copy URL</button></div>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) { if (e.target.id === 'modal') closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modal').classList.remove('open'); }
+function copyUrl(url) { navigator.clipboard.writeText(url).catch(() => {}); alert('Recording URL copied!'); }
+function placeCall() {
+  const num = document.getElementById('call-number').value;
+  if (!num) { alert('Please enter a phone number'); return; }
+  alert('Go to ElevenLabs → Phone Numbers → Outbound Call\nEnter: ' + num);
+}
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'transcripts') renderTranscripts();
+}
+
+renderCalls(calls.slice(0, 5), 'recent-calls');
+renderCalls(calls, 'all-calls');
+</script>
+</body>
+</html>
