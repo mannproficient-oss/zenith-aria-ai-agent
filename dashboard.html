@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aria Admin Dashboard — Zenith School of AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
+    .header { background: #111118; padding: 20px 30px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 22px; color: #fff; }
+    .header h1 span { color: #7c5cbf; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #4caf50; display: inline-block; margin-right: 8px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 24px 30px; }
+    .stat-card { background: #111118; border: 1px solid #222; border-radius: 12px; padding: 20px; }
+    .stat-card .label { font-size: 12px; color: #888; margin-bottom: 8px; text-transform: uppercase; }
+    .stat-card .value { font-size: 28px; font-weight: 600; color: #fff; }
+    .stat-card .sub { font-size: 12px; color: #4caf50; margin-top: 4px; }
+    .main { padding: 0 30px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { background: #111118; border: 1px solid #222; border-radius: 12px; padding: 20px; }
+    .card h2 { font-size: 16px; color: #fff; margin-bottom: 16px; }
+    .call-btn { width: 100%; padding: 14px; background: #7c5cbf; color: #fff; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-bottom: 12px; }
+    .call-btn:hover { background: #6a4aad; }
+    input { width: 100%; padding: 10px 14px; background: #1a1a24; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 14px; margin-bottom: 12px; }
+    .call-item { padding: 12px; border-bottom: 1px solid #1a1a24; display: flex; justify-content: space-between; align-items: center; }
+    .call-item:last-child { border-bottom: none; }
+    .call-to { font-size: 14px; color: #fff; }
+    .call-status { font-size: 12px; padding: 3px 8px; border-radius: 4px; }
+    .status-completed { background: #1a3a1a; color: #4caf50; }
+    .status-failed { background: #3a1a1a; color: #f44336; }
+    .status-queued { background: #1a2a3a; color: #2196f3; }
+    .transcript-box { background: #0d0d14; border: 1px solid #222; border-radius: 8px; padding: 14px; font-size: 13px; color: #aaa; line-height: 1.7; max-height: 200px; overflow-y: auto; }
+    .refresh-btn { background: transparent; border: 1px solid #333; color: #aaa; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; float: right; }
+    .refresh-btn:hover { border-color: #7c5cbf; color: #fff; }
+    .response-box { background: #0d0d14; border: 1px solid #222; border-radius: 8px; padding: 12px; font-size: 13px; color: #4caf50; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🤖 <span>Aria</span> Admin Dashboard — Zenith School of AI</h1>
+  <div><span class="status-dot"></span><span id="server-status">Checking server...</span></div>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="label">Total Calls</div>
+    <div class="value" id="total-calls">—</div>
+    <div class="sub">from call log</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Completed</div>
+    <div class="value" id="completed-calls">—</div>
+    <div class="sub">successfully connected</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Server</div>
+    <div class="value" style="font-size:16px;margin-top:4px;" id="server-url">localhost:3000</div>
+    <div class="sub">Node.js + Express</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Twilio Number</div>
+    <div class="value" style="font-size:16px;margin-top:4px;">+1 401 398 5468</div>
+    <div class="sub">trial account</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Outbound Call -->
+  <div class="card">
+    <h2>📞 Make Outbound Call</h2>
+    <input type="tel" id="phone-input" placeholder="Enter phone number e.g. +919015955040">
+    <button class="call-btn" onclick="makeCall()">🚀 Call with Aria</button>
+    <div class="response-box" id="call-response"></div>
+    <div style="font-size:12px;color:#666;margin-top:8px;">⚠ Trial account: only verified numbers will ring</div>
+  </div>
+
+  <!-- Call Logs -->
+  <div class="card">
+    <h2>📋 Recent Calls <button class="refresh-btn" onclick="loadCalls()">↻ Refresh</button></h2>
+    <div id="calls-list"><div style="color:#555;font-size:13px;">Loading calls...</div></div>
+  </div>
+
+  <!-- Transcript Viewer -->
+  <div class="card">
+    <h2>📝 Last Call Transcript</h2>
+    <div class="transcript-box" id="transcript-box">
+      Transcripts are saved automatically in ElevenLabs Conversations section after each call. Select a call above to view details.
+    </div>
+  </div>
+
+  <!-- Server Info -->
+  <div class="card">
+    <h2>⚙️ Server Info</h2>
+    <div style="font-size:13px;color:#aaa;line-height:2;">
+      <div>🟢 <strong style="color:#fff">Server:</strong> <span id="info-status">Checking...</span></div>
+      <div>🌐 <strong style="color:#fff">ngrok URL:</strong> <span style="color:#7c5cbf">Update in .env</span></div>
+      <div>🤖 <strong style="color:#fff">Agent:</strong> Aria — Zenith School of AI</div>
+      <div>🎙️ <strong style="color:#fff">Voice:</strong> Anvi (Hindi + English)</div>
+      <div>🧠 <strong style="color:#fff">LLM:</strong> Gemini 2.5 Flash</div>
+      <div>📦 <strong style="color:#fff">Stack:</strong> Node.js + Twilio + ElevenLabs</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SERVER = 'http://localhost:3000';
+
+  async function checkServer() {
+    try {
+      const res = await fetch(SERVER);
+      const data = await res.json();
+      document.getElementById('server-status').textContent = 'Server Online ✅';
+      document.getElementById('info-status').textContent = 'Running on port 3000';
+    } catch {
+      document.getElementById('server-status').textContent = 'Server Offline ❌';
+      document.getElementById('info-status').textContent = 'Not running';
+    }
+  }
+
+  async function loadCalls() {
+    try {
+      const res = await fetch(`${SERVER}/calls`);
+      const data = await res.json();
+      const calls = data.calls;
+      document.getElementById('total-calls').textContent = calls.length;
+      document.getElementById('completed-calls').textContent = calls.filter(c => c.status === 'completed').length;
+      const html = calls.length === 0
+        ? '<div style="color:#555;font-size:13px;">No calls yet</div>'
+        : calls.map(c => `
+          <div class="call-item">
+            <div>
+              <div class="call-to">${c.to}</div>
+              <div style="font-size:11px;color:#555;">${new Date(c.startTime).toLocaleString()}</div>
+            </div>
+            <span class="call-status status-${c.status}">${c.status}</span>
+          </div>`).join('');
+      document.getElementById('calls-list').innerHTML = html;
+    } catch {
+      document.getElementById('calls-list').innerHTML = '<div style="color:#f44336;font-size:13px;">Could not load calls — is server running?</div>';
+    }
+  }
+
+  async function makeCall() {
+    const to = document.getElementById('phone-input').value.trim();
+    if (!to) { alert('Please enter a phone number!'); return; }
+    const btn = document.querySelector('.call-btn');
+    btn.textContent = '⏳ Calling...';
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${SERVER}/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to })
+      });
+      const data = await res.json();
+      const box = document.getElementById('call-response');
+      box.style.display = 'block';
+      if (data.success) {
+        box.textContent = `✅ Call initiated! SID: ${data.callSid} | Status: ${data.status}`;
+        loadCalls();
+      } else {
+        box.style.color = '#f44336';
+        box.textContent = `❌ Error: ${data.error}`;
+      }
+    } catch {
+      document.getElementById('call-response').textContent = '❌ Server not reachable';
+    }
+    btn.textContent = '🚀 Call with Aria';
+    btn.disabled = false;
+  }
+
+  checkServer();
+  loadCalls();
+  setInterval(loadCalls, 30000);
+</script>
+</body>
+</html>
