@@ -1,6 +1,5 @@
 node_modules/
 .env
 serviceAccountKey.json
-aria-dashboard/node_modules/
-
-zenith-aria-server/
+backend/node_modules/
+frontend/node_modules/
